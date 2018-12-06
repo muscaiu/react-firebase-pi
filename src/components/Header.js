@@ -71,7 +71,6 @@ class Header extends Component {
                 <Weather lastWeatherUpdate={lastWeatherUpdate} />
               } */}
               <Version>version: {pack.version}</Version>
-              <ApiVersion>api version: {apiVersion}</ApiVersion>
             </div> :
             null
         }

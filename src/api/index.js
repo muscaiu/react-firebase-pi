@@ -3,7 +3,9 @@ var CronJob = require('cron').CronJob;
 const Gpio = require('onoff').Gpio;
 const relay = new Gpio(17, 'out');
 
-const pack = require('../package.json')
+//stop relay imediatelly
+relay.writeSync(1); //turn relay off
+
 var serviceAccount = require('../config/serviceAccount.json');
 
 admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
@@ -12,15 +14,10 @@ db.settings({ timestampsInSnapshots: true })
 
 var statusRef = db.collection('status');
 var modeRef = db.collection('mode');
-var versionsRef = db.collection('versions');
 
 let ignoreExistingStateEntries = true;
 let ignoreExistingModeEntries = true;
 let mode = 'unititialized'
-
-versionsRef.doc('apiVersion').update({
-  value: pack.version
-})
 
 modeRef
   .orderBy('createdAt', 'desc')
@@ -84,18 +81,21 @@ statusRef
         }
       } else {
         console.log('initial status', changed.value)
+        const initialStatus = changed.value;
+        if (initialStatus) {
+          relay.writeSync(0); //turn relay on
+        } else {
+          relay.writeSync(1); //turn relay off
+        }
       }
     });
 
     ignoreExistingStateEntries = false;
   });
 
-
-
-
 //seconds(0-59), minutes(0-59), hours(0-23), day of month(1-31), months0-11, day of week(0-6)
-const customMinute = 26;
-const customHour = 0;
+const customMinute = 00
+const customHour = 19;
 const startTime = new CronJob(`00 ${customMinute} ${customHour} * * *`, function () {
   if (mode === 'auto') {
     statusRef.add({
@@ -109,7 +109,7 @@ const startTime = new CronJob(`00 ${customMinute} ${customHour} * * *`, function
   }
 });
 
-const stopTime = new CronJob(`00 ${customMinute + 1} ${customHour} * * *`, function () {
+const stopTime = new CronJob(`00 ${customMinute} ${customHour + 1} * * *`, function () {
   if (mode === 'auto') {
     statusRef.add({
       value: false,
@@ -122,6 +122,12 @@ const stopTime = new CronJob(`00 ${customMinute + 1} ${customHour} * * *`, funct
   }
 });
 
-
 startTime.start();
 stopTime.start();
+
+
+process.on('SIGINT', () => { //on ctrl+c
+  relay.writeSync(0); // Turn relay off
+  relay.unexport(); // Unexport relay GPIO to free resources
+  process.exit(); //exit completely
+}); 
