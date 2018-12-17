@@ -3,6 +3,14 @@ var CronJob = require('cron').CronJob;
 const Gpio = require('onoff').Gpio;
 const relay = new Gpio(17, 'out');
 
+const express = require('express');
+const bodyParser = require('body-parser');
+const cors = require('cors');
+const port = 3001;
+const app = express();
+const router = express.Router();
+
+
 //stop relay imediatelly
 relay.writeSync(1); //turn relay off
 
@@ -125,9 +133,30 @@ const stopTime = new CronJob(`00 ${customMinute} ${customHour + 1} * * *`, funct
 startTime.start();
 stopTime.start();
 
-
 process.on('SIGINT', () => { //on ctrl+c
   relay.writeSync(0); // Turn relay off
   relay.unexport(); // Unexport relay GPIO to free resources
   process.exit(); //exit completely
-}); 
+});
+
+
+
+
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json());
+app.use(cors());
+
+router.get('/test', function (req, res) {
+  const currVal = relay.readSync();
+  if (!currVal) { res.json({ relayStatus: 'err' }) }
+  if (currVal === 1) { res.json({ relayStatus: 'off' }) }
+  if (currVal === 0) { res.json({ relayStatus: 'on' }) }
+  console.log('request status', currVal)
+});
+
+app.listen(port, function () {
+  console.log(`API running on port ${port}`);
+});
+
+app.use('/api', router);
+

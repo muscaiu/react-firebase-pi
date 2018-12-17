@@ -3,6 +3,9 @@ import styled from 'styled-components';
 import { connect } from 'react-redux';
 import { firestoreConnect, isLoaded } from 'react-redux-firebase';
 import { compose } from 'redux';
+import axios from 'axios';
+
+import Button from '@material-ui/core/Button';
 
 // import { API } from 'config/constants';
 import Spinner from 'components/Spinner';
@@ -43,8 +46,18 @@ class Header extends Component {
     this.props.toggleStatus(this.props.fbStatus);
   }
 
+  handleTestClick = () => {
+    axios.get('http://cassusa.go.ro:3001/api/test')
+      .then(function (response) {
+        alert('Real status: ' + response.data.relayStatus);
+      })
+      .catch(function (err) {
+        alert(err);
+      })
+  }
+
   render() {
-    const  apiVersion = '2.1.2';
+    const apiVersion = '2.1.2';
     const { fbStatus, fbMode, fbLastAction } = this.props;
 
     return (
@@ -67,6 +80,7 @@ class Header extends Component {
                 mode={fbMode}
                 isActive={fbStatus}
               />
+              <Button onClick={this.handleTestClick}>Test</Button>
               {/* {lastWeatherUpdate &&
                 <Weather lastWeatherUpdate={lastWeatherUpdate} />
               } */}
