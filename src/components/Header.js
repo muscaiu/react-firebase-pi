@@ -49,6 +49,7 @@ class Header extends Component {
   handleTestClick = () => {
     axios.get('http://cassusa.go.ro:3001/api/test')
       .then(function (response) {
+        console.log(response.data.relayStatus)
         alert('Real status: ' + response.data.relayStatus);
       })
       .catch(function (err) {

@@ -133,13 +133,6 @@ const stopTime = new CronJob(`00 ${customMinute} ${customHour + 1} * * *`, funct
 startTime.start();
 stopTime.start();
 
-process.on('SIGINT', () => { //on ctrl+c
-  relay.writeSync(0); // Turn relay off
-  relay.unexport(); // Unexport relay GPIO to free resources
-  process.exit(); //exit completely
-});
-
-
 
 
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -148,10 +141,18 @@ app.use(cors());
 
 router.get('/test', function (req, res) {
   const currVal = relay.readSync();
-  if (!currVal) { res.json({ relayStatus: 'err' }) }
-  if (currVal === 1) { res.json({ relayStatus: 'off' }) }
-  if (currVal === 0) { res.json({ relayStatus: 'on' }) }
+
   console.log('request status', currVal)
+
+  switch (currVal) {
+    case 1:
+      return res.json({ relayStatus: 'off' })
+    case 0:
+      return res.json({ relayStatus: 'on' })
+    default:
+      return res.json({ relayStatus: 'err' })
+  }
+
 });
 
 app.listen(port, function () {
@@ -159,4 +160,15 @@ app.listen(port, function () {
 });
 
 app.use('/api', router);
+
+
+
+
+process.on('SIGINT', () => { //on ctrl+c
+  relay.writeSync(0); // Turn relay off
+  relay.unexport(); // Unexport relay GPIO to free resources
+  process.exit(); //exit completely
+});
+
+
 
